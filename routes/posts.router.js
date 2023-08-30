@@ -10,7 +10,7 @@ const prisma = new PrismaClient({
   errorFormat: "pretty",
 }); // PrismaClient 인스턴스를 생성합니다.
 
-// 게시글 생성
+/** 게시글 생성 API **/
 router.post("/posts", async (req, res, next) => {
   const { user, password, title, content } = req.body;
 
@@ -69,8 +69,11 @@ router.get("/posts/:postId", async (req, res, next) => {
       },
     });
 
-    if (!post) { // 데이터베이스에서 post를 찾지 못했을 때의 조건
-      return res.status(400).json({ message: '데이터 형식이 올바르지 않습니다.' });
+    if (!post) {
+      // 데이터베이스에서 post를 찾지 못했을 때의 조건
+      return res
+        .status(400)
+        .json({ message: "데이터 형식이 올바르지 않습니다." });
     }
 
     return res.status(200).json({ data: post });
@@ -79,7 +82,43 @@ router.get("/posts/:postId", async (req, res, next) => {
   }
 });
 
+// routes/posts.router.js
 
+/** 게시글 수정 API **/
+router.put("/posts/:postId", async (req, res, next) => {
+  const { postId } = req.params;
+  const { title, content, password } = req.body;
+
+  // 데이터 유효성 검사
+  if (!title || !content || !password) {
+    return res
+      .status(400)
+      .json({ message: "데이터 형식이 올바르지 않습니다." });
+  }
+
+  try {
+    const post = await prisma.posts.findUnique({
+      where: { postId: postId },
+    });
+
+    if (!post)
+      return res.status(404).json({ message: "게시글 조회에 실패하였습니다." });
+    else if (post.password !== password)
+      return res.status(401).json({ message: "비밀번호가 일치하지 않습니다." });
+
+    await prisma.posts.update({
+      data: { title, content },
+      where: {
+        postId: postId,
+        password,
+      },
+    });
+
+    return res.status(200).json({ data: "게시글이 수정되었습니다." });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.use((err, req, res, next) => {
   console.error(err.stack); // 오류 내용을 콘솔에 출력
