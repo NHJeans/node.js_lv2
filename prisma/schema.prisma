@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // MySQL 데이터베이스 엔진을 사용합니다.
+  provider = "mysql"
+  // 데이터베이스 연결 정보를 .env 파일의 DATABASE_URL 로부터 읽어옵니다.
+  url      = env("DATABASE_URL")
+}
+
+model Products {
+  productId   Int     @id @default(autoincrement()) @map("productId")
+  productName String  @unique @map("productName")
+  price       Int     @default(1000) @map("price")
+  info        String? @map("info") @db.Text
+
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  @@map("Products")
+}
+
+model Posts {
+  postId    String   @id @default(uuid()) @map("post_id")
+  user      String   @map("user")
+  title     String   @map("title")
+  content   String   @map("content") @db.Text
+  password  String   @map("password")
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  @@map("Posts")
+}
