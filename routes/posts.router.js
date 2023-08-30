@@ -1,14 +1,7 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../utils/prisma/index.js";
 
 const router = express.Router(); // express.Router()를 이용해 라우터를 생성합니다.
-const prisma = new PrismaClient({
-  // Prisma를 이용해 데이터베이스를 접근할 때, SQL을 출력해줍니다.
-  log: ["query", "info", "warn", "error"],
-
-  // 에러 메시지를 평문이 아닌, 개발자가 읽기 쉬운 형태로 출력해줍니다.
-  errorFormat: "pretty",
-}); // PrismaClient 인스턴스를 생성합니다.
 
 /** 게시글 생성 API **/
 router.post("/posts", async (req, res, next) => {
@@ -16,9 +9,7 @@ router.post("/posts", async (req, res, next) => {
 
   // 데이터 누락 여부 검사
   if (!user || !title || !content || !password) {
-    return res
-      .status(400)
-      .json({ message: "데이터 형식이 올바르지 않습니다." });
+    return res.status(400).json({ message: res.locals.messages.noData });
   }
 
   try {
@@ -31,7 +22,7 @@ router.post("/posts", async (req, res, next) => {
       },
     });
 
-    return res.status(201).json({ message: "게시글을 생성하였습니다." });
+    return res.status(201).json({ message: res.locals.messages.succeed });
   } catch (error) {
     next(error); // 오류 핸들링을 위한 next 호출
   }
@@ -46,6 +37,9 @@ router.get("/posts", async (req, res, next) => {
       title: true,
       createdAt: true,
     },
+    orderBy: {
+      createdAt: 'desc'
+    }
   });
 
   return res.status(200).json({ data: posts });
@@ -71,9 +65,7 @@ router.get("/posts/:postId", async (req, res, next) => {
 
     if (!post) {
       // 데이터베이스에서 post를 찾지 못했을 때의 조건
-      return res
-        .status(400)
-        .json({ message: "데이터 형식이 올바르지 않습니다." });
+      return res.status(400).json({ message: res.locals.messages.noData });
     }
 
     return res.status(200).json({ data: post });
@@ -91,20 +83,17 @@ router.put("/posts/:postId", async (req, res, next) => {
 
   // 데이터 유효성 검사
   if (!title || !content || !password) {
-    return res
-      .status(400)
-      .json({ message: "데이터 형식이 올바르지 않습니다." });
+    return res.status(400).json({ message: res.locals.messages.noData });
   }
-
   try {
     const post = await prisma.posts.findUnique({
       where: { postId: postId },
     });
 
     if (!post)
-      return res.status(404).json({ message: "게시글 조회에 실패하였습니다." });
+      return res.status(404).json({ message: res.locals.messages.notFound });
     else if (post.password !== password)
-      return res.status(401).json({ message: "비밀번호가 일치하지 않습니다." });
+      return res.status(401).json({ message: res.locals.messages.doesntMatch });
 
     await prisma.posts.update({
       data: { title, content },
@@ -114,15 +103,44 @@ router.put("/posts/:postId", async (req, res, next) => {
       },
     });
 
-    return res.status(200).json({ data: "게시글이 수정되었습니다." });
+    return res.status(200).json({ data: res.locals.messages.edit });
   } catch (error) {
     next(error);
   }
 });
 
+/** 게시글 삭제 API **/
+router.delete("/posts/:postId", async (req, res, next) => {
+  const { postId } = req.params;
+  const { password } = req.body;
+
+  if (!postId || !password) {
+    return res
+      .status(400)
+      .json({ message: "데이터 형식이 올바르지 않습니다." });
+  }
+  try {
+    const post = await prisma.posts.findUnique({
+      where: { postId: postId },
+    });
+    if (!post) {
+      return res.status(404).json({ message: res.locals.messages.notFound });
+    }
+    if (post.password !== password) {
+      return res.status(401).json({ message: res.locals.messages.doesntMatch });
+    }
+    await prisma.posts.delete({ where: { postId: postId } });
+
+    return res.status(200).json({ message: res.locals.messages.deleted });
+  } catch (err) {
+    next(err); // 오류를 미들웨어로 전달
+  }
+});
+
 router.use((err, req, res, next) => {
   console.error(err.stack); // 오류 내용을 콘솔에 출력
-  res.status(500).json({ message: "서버 내부 오류가 발생했습니다." });
+  res.status(500).json({ message: res.locals.messages.serverError });
 });
 
 export default router;
+
