@@ -3,41 +3,6 @@ import { prisma } from "../utils/prisma/index.js";
 
 const router = express.Router({ mergeParams: true });
 
-
-// 댓글 생성 API
-// router.post("/", async (req, res, next) => {
-//   const { postId } = req.params;
-//   const { user, password, content } = req.body;
-
-//   if (!user || !password || !content) {
-//     return res.status(400).json({ message: res.locals.messages.noData });
-//   }
-
-//   try {
-//     const existingPost = await prisma.post.findUnique({
-//       where: { postId: postId },
-//     });
-
-//     if (!existingPost) {
-//       return res.status(404).json({ message: res.locals.messages.notFound });
-//     }
-
-//     await prisma.comment.create({
-//       data: {
-//         postId: postId,
-//         user,
-//         password,
-//         content,
-//       },
-//     });
-
-//     return res.status(200).json({ message: "댓글을 생성하였습니다." });
-
-//   } catch (err) {
-//     next(err);
-//   }
-// });
-
 /* 댓글 생성 Logic - Eric */
 // 1. request body input : user, password, content
 // 2. validation check : user, password, content
@@ -45,7 +10,7 @@ const router = express.Router({ mergeParams: true });
 // 4. response : {  "message": "댓글을 생성하였습니다."} 출력
 // 5. error handling : # 400 body 또는 params를 입력받지 못한 경우 { message: '데이터 형식이 올바르지 않습니다.' } 출력
 // 5. error handling : # 400 body의 content를 입력받지 못한 경우 { message: '댓글 내용을 입력해주세요.' } 출력
-router.post('/', async (req, res, next) => {
+router.post("/", async (req, res, next) => {
   const { postId } = req.params;
   const { user, password, content } = req.body;
 
@@ -55,7 +20,7 @@ router.post('/', async (req, res, next) => {
     res.status(400).json({ message: res.locals.messages.noComment });
   } else {
     try {
-      const existingPost = await prisma.posts.findUnique({
+      const existingPost = await prisma.post.findUnique({
         where: { postId },
       });
 
@@ -63,7 +28,7 @@ router.post('/', async (req, res, next) => {
         res.status(404).json({ message: res.locals.messages.notFound });
       }
 
-      const createdComment = await prisma.comments.create({
+      const createdComment = await prisma.comment.create({
         data: {
           postId,
           user,
@@ -71,52 +36,13 @@ router.post('/', async (req, res, next) => {
           content,
         },
       });
-      res.status(201).json({ message: '댓글을 생성하였습니다.' });
+      res.status(201).json({ message: "댓글을 생성하였습니다." });
     } catch (error) {
       console.error(error);
       next(error);
     }
   }
 });
-
-
-
-
-
-
-// // 댓글 조회 API
-// router.get("/", async (req, res, next) => {
-//   const { postId } = req.params;
-
-//   try {
-//     // 댓글을 데이터베이스에서 검색
-//     const comments = await prisma.comment.findMany({
-//       where: { postId: postId },
-//       select: {
-//         commentId: true,
-//         user: true,
-//         content: true,
-//         createdAt: true,
-//       },
-//     });
-
-
-//     const commentsPrint = comments.map((comment) => ({
-//       commentId: comment.commentId,
-//       user: comment.user,
-//       content: comment.content,
-//       createdAt: comment.createdAt,
-//     }));
-
-//     if (commentsPrint.length === 0) {
-//       return res.status(400).json({ message: "댓글이 존재하지 않습니다." });
-//     }
-
-//     return res.status(200).json({ data: commentsPrint });
-//   } catch (err) {
-//     next(err);
-//   }
-// });
 
 
 
@@ -143,18 +69,20 @@ router.post('/', async (req, res, next) => {
 // }
 // 5. error handling : # 400 postId를 입력받지 못한 경우 { message: '데이터 형식이 올바르지 않습니다.' } 출력
 // 5. error handling : # 404 postId에 해당하는 댓글이 없는 경우 { message: '댓글 조회에 실패하였습니다.' } 출력
-router.get('/posts/:postId/comments', async (req, res, next) => {
+
+// 댓글 목록 조회 API
+router.get("/", async (req, res, next) => {
   const { postId } = req.params;
   if (!postId) {
-    res.status(400).json({ message: '데이터 형식이 올바르지 않습니다.' });
+    res.status(400).json({ message: res.locals.messages.noData });
   } else {
     try {
-      const comments = await prisma.comments.findMany({
+      const comments = await prisma.comment.findMany({
         where: {
           postId,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
         select: {
           commentId: true,
@@ -164,7 +92,7 @@ router.get('/posts/:postId/comments', async (req, res, next) => {
         },
       });
       if (comments.length === 0) {
-        res.status(404).json({ message: '댓글 조회에 실패하였습니다.' });
+        res.status(404).json({ message: res.locals.messages.notFoundComment });
       } else {
         res.status(200).json({ data: comments });
       }
@@ -174,101 +102,6 @@ router.get('/posts/:postId/comments', async (req, res, next) => {
     }
   }
 });
-
-
-
-
-
-// 댓글 수정
-router.put("/:commentId", async (req, res, next) => {
-  try {
-    const { postId, commentId } = req.params;
-    const { password, content } = req.body;
-
-    // 게시글 조회 (게시글이 있는지 확인)
-    const post = await prisma.post.findUnique({
-      where: { postId },
-    });
-
-    // 게시글이 없는 경우
-    if (!post) {
-      return res.status(404).json({ message: "게시글 조회에 실패하였습니다." });
-    }
-
-    // 댓글 조회
-    const comment = await prisma.comment.findUnique({
-      where: { commentId },
-    });
-
-    // 댓글이 없는 경우
-    if (!comment) {
-      return res.status(404).json({ message: "댓글 조회에 실패하였습니다." });
-    }
-
-    // 비밀번호 확인
-    if (password !== comment.password) {
-      return res.status(401).json({ message: "비밀번호가 다릅니다." });
-    }
-
-    // 댓글 수정
-    await prisma.comment.update({
-      where: { commentId: commentId },
-      data: { content: content },
-    });
-
-    return res.status(200).json({ message: "댓글을 수정하였습니다." });
-  } catch (err) {
-    console.error(err);
-    next(err); // 에러를 처리하는 미들웨어로 넘김
-  }
-});
-
-// 댓글 삭제 API
-router.delete("/:commentId", async (req, res, next) => {
-  try {
-    const { postId, commentId } = req.params;
-    const { password } = req.body;
-
-    // 게시글 조회
-    const post = await prisma.post.findUnique({
-      where: { postId },
-    });
-
-    // 게시글이 없는 경우
-    if (!post) {
-      return res.status(404).json({ message: "게시글이 존재하지 않습니다." });
-    }
-
-    // 댓글 조회
-    const comment = await prisma.comment.findUnique({
-      where: { commentId },
-    });
-
-    // 댓글이 없는 경우 또는 댓글의 postId와 주어진 postId가 일치하지 않는 경우
-    if (!comment || comment.postId !== postId) {
-      return res.status(404).json({ message: "댓글 조회에 실패하였습니다." });
-    }
-
-    // 비밀번호 확인
-    if (password !== comment.password) {
-      return res.status(401).json({ message: "비밀번호가 다릅니다." });
-    }
-
-    // 댓글 삭제
-    await prisma.comment.delete({
-      where: { commentId },
-    });
-
-    return res.status(200).json({ message: "댓글을 삭제하였습니다." });
-  } catch (err) {
-    console.error(err);
-    next(err); // 에러를 처리하는 미들웨어로 넘김
-  }
-});
-
-
-
-
 
 
 /* 댓글 수정 Logic */
@@ -282,48 +115,45 @@ router.delete("/:commentId", async (req, res, next) => {
 // 7. error handling : # 400 body 또는 params를 입력받지 못한 경우 { message: '데이터 형식이 올바르지 않습니다.' } 출력
 // 7. error handling : # 404 _commentId에 해당하는 댓글이 존재하지 않을 경우 { message: '댓글 조회에 실패하였습니다.' } 출력
 
-// router.put('/posts/:postId/comments/:commentId', async (req, res, next) => {
-//   console.log("hello");
-//   const { postId, commentId } = req.params;
-//   const { password, content } = req.body;
+router.put("/:commentId", async (req, res, next) => {
+  console.log("hello");
+  const { postId, commentId } = req.params;
+  const { password, content } = req.body;
 
-//   if (!postId, !commentId || !password || !content) {
-//       res.status(400).json({ message: '데이터 형식이 올바르지 않습니다.' });
-//   } else if (!content) {
-//       res.status(400).json({ message: '댓글 내용을 입력해주세요.' });
-//   } else {
-//       try {
-//           const comment = await prisma.comments.findUnique({
-//               where: {
-//                   commentId,
-//               },
-//           });
-//           if (!comment) {
-//               res.status(404).json({ message: '댓글 조회에 실패하였습니다.' });
-//           } else {
-//               if (comment.password !== password) {
-//                   res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
-//               }
-//               const updatedComment = await prisma.comments.update({
-//                   where: {
-//                       commentId,
-//                       postId,
-//                   },
-//                   data: {
-//                       content,
-//                   },
-//               });
-//               res.status(200).json({ message: '댓글을 수정하였습니다.' });
-//           }
-//       } catch (error) {
-//           console.error(error);
-//           next(error);
-//       }
-//   }
-// });
-
-
-
+  if ((!postId, !commentId || !password || !content)) {
+    res.status(400).json({ message: res.locals.messages.noData });
+  } else if (!content) {
+    res.status(400).json({ message: res.locals.messages.noComment });
+  } else {
+    try {
+      const comment = await prisma.comment.findUnique({
+        where: {
+          commentId,
+        },
+      });
+      if (!comment) {
+        res.status(404).json({ message: res.locals.messages.notFoundComment });
+      } else {
+        if (comment.password !== password) {
+          res.status(401).json({ message: res.locals.messages.doesntMatch });
+        }
+        const updatedComment = await prisma.comment.update({
+          where: {
+            commentId,
+            postId,
+          },
+          data: {
+            content,
+          },
+        });
+        res.status(200).json({ message: res.locals.messages.editComment });
+      }
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+});
 
 /* 댓글 삭제 Logic */
 // 1. request body input : password
@@ -335,40 +165,39 @@ router.delete("/:commentId", async (req, res, next) => {
 // 7. response : {  "message": "댓글을 삭제하였습니다."} 출력
 // 8. error handling : # 400 body 또는 params를 입력받지 못한 경우 { message: '데이터 형식이 올바르지 않습니다.' } 출력
 // 8. error handling : # 404 _commentId에 해당하는 댓글이 존재하지 않을 경우 { message: '댓글 조회에 실패하였습니다.' } 출력
-// router.delete('/posts/:postId/comments/:commentId', async (req, res, next) => {
-//   const { postId, commentId } = req.params;
-//   const { password } = req.body;
+router.delete("/:commentId", async (req, res, next) => {
+  const { postId, commentId } = req.params;
+  const { password } = req.body;
 
-//   if (!postId, !commentId || !password) {
-//       res.status(400).json({ message: '데이터 형식이 올바르지 않습니다.' });
-//   } else {
-//       try {
-//           const comment = await prisma.comments.findUnique({
-//               where: {
-//                   commentId,
-//               },
-//           });
-//           if (!comment) {
-//               res.status(404).json({ message: '댓글 조회에 실패하였습니다.' });
-//           } else {
-//               if (comment.password !== password) {
-//                   res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
-//               }
-//               await prisma.comments.delete({
-//                   where: {
-//                       commentId,
-//                       postId,
-//                   },
-//               });
-//               res.status(200).json({ message: '댓글을 삭제하였습니다.' });
-//           }
-//       } catch (error) {
-//           console.error(error);
-//           next(error);
-//       }
-//   }
-// });
-
+  if ((!postId, !commentId || !password)) {
+    res.status(400).json({ message: res.locals.messages.noData });
+  } else {
+    try {
+      const comment = await prisma.comment.findUnique({
+        where: {
+          commentId,
+        },
+      });
+      if (!comment) {
+        res.status(404).json({ message: res.locals.messages.notFoundComment });
+      } else {
+        if (comment.password !== password) {
+          res.status(401).json({ message: res.locals.messages.doesntMatch });
+        }
+        await prisma.comment.delete({
+          where: {
+            commentId,
+            postId,
+          },
+        });
+        res.status(200).json({ message:result.locals.messages.deletedComment });
+      }
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+});
 
 
 export default router;

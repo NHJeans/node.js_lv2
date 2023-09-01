@@ -3,6 +3,7 @@ import { prisma } from "../utils/prisma/index.js";
 
 const router = express.Router();
 
+// 게시물 생성 API
 router.post("/", async (req, res, next) => {
   const { user, password, title, content } = req.body;
 
@@ -26,6 +27,7 @@ router.post("/", async (req, res, next) => {
   }
 });
 
+// 게시물 목록 조회 API
 router.get("/", async (req, res, next) => {
   const posts = await prisma.Post.findMany({
     select: {
@@ -126,11 +128,6 @@ router.delete("/:postId", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-
-router.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: res.locals.messages.serverError });
 });
 
 export default router;
