@@ -1,7 +1,7 @@
 /**
  * @swagger
  * paths:
- *   /:
+ *   /api/posts:
  *     post:
  *       tags:
  *         - 게시글
@@ -22,10 +22,11 @@
  *                 content:
  *                   type: string
  *       responses:
- *         200:
+ *         201:
  *           description: 성공적으로 게시글이 생성됨
  *         400:
  *           description: 필요한 데이터가 누락됨
+ *       
  *     get:
  *       tags:
  *         - 게시글
@@ -33,9 +34,19 @@
  *       responses:
  *         200:
  *           description: 성공적으로 게시글 목록을 가져옴
+ *           content:
+ *             application/json:
+ *               example:
+ *                 - id: "postId1"
+ *                   title: "게시글 제목 1"
+ *                   content: "게시글 내용 1"
+ *                 - id: "postId2"
+ *                   title: "게시글 제목 2"
+ *                   content: "게시글 내용 2"
  *         400:
  *           description: 게시글이 없음
- *   /{postId}:
+ *       
+ *   /api/posts/{postId}:
  *     get:
  *       tags:
  *         - 게시글
@@ -49,8 +60,15 @@
  *       responses:
  *         200:
  *           description: 성공적으로 게시글을 가져옴
+ *           content:
+ *             application/json:
+ *               example:
+ *                 id: "postId1"
+ *                 title: "게시글 제목 1"
+ *                 content: "게시글 내용 1"
  *         400:
  *           description: 게시글이 없음
+ *       
  *     put:
  *       tags:
  *         - 게시글
@@ -83,6 +101,7 @@
  *           description: 게시글을 찾을 수 없음
  *         401:
  *           description: 비밀번호가 일치하지 않음
+ *       
  *     delete:
  *       tags:
  *         - 게시글

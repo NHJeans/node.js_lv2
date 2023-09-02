@@ -1,7 +1,7 @@
 /**
  * @swagger
  * paths:
- *   /posts/{postId}/comments:
+ *   /api/posts/{postId}/comments:
  *     post:
  *       summary: 댓글 생성
  *       parameters:
@@ -45,12 +45,17 @@
  *       responses:
  *         200:
  *           description: 댓글 목록 조회 성공
- *         400:
- *           description: 잘못된 데이터 입력
- *         404:
- *           description: 댓글 없음
+ *           content:
+ *             application/json:
+ *               example:
+ *                 - id: "commentId1"
+ *                   user: "username"
+ *                   content: "댓글 내용 1"
+ *                 - id: "commentId2"
+ *                   user: "username"
+ *                   content: "댓글 내용 2"
  * 
- *   /posts/{postId}/comments/{commentId}:
+ *   /api/posts/{postId}/comments/{commentId}:
  *     put:
  *       summary: 댓글 수정
  *       parameters:
